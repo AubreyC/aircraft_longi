@@ -1,9 +1,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% *Aircraft Logitudinal Linear Analysis*
+% *Aircraft Longitudinal Linear Analysis*
 % 
-% - Linearization around steady flight trim condition
-% - SISO system for Elevator to Pitch  
+% - Linearization around steady level flight trim condition
+% - SISO analysis for Elevator to Pitch system
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 clear all;
@@ -12,21 +12,22 @@ clear all;
 params;
 
 %% Trim parameters
+
+% v_a_trim = 70;
+% [x_state_trim, v_a_trim, alpha_trim, d_th_trim, d_elev_trim] = find_trim_steady_level_flight(v_a_trim, P);
+
+% Pre-computed value:
 alpha_trim = 0.074030900438260;
 v_a_trim = 70.000308594752980;
 d_th_trim = 0.707469889617298;
 d_elev_trim = -(P.Cm_0 + P.Cm_alpha*alpha_trim)/P.Cm_delta;
 
-theta_trim = alpha_trim;
-v_trim_bf = rot_Y(alpha_trim)*[v_a_trim;0;0];
+x_state_trim = define_state_trim(alpha_trim,d_th_trim, v_a_trim);
 
-%% Trim state
-x_trim = [0;0; v_trim_bf(1);v_trim_bf(3);theta_trim;0];
-
-u_trim = v_trim_bf(1);
-w_trim = v_trim_bf(3);
-
-q_trim = 0;
+u_trim = x_state_trim(3);
+w_trim = x_state_trim(4);
+theta_trim = x_state_trim(5);
+q_trim = x_state_trim(6);
 
 %% Aerodynamic force coefficients
 Cx_0 = -P.Cd_0;
@@ -70,26 +71,30 @@ B = [X_de, X_dth;...
 disp('Eigen Values:');
 eigen_values = eig(A)
 
+if(real(eigen_values(4)))
+    disp('/!\ Phugoid Mode is unstable /!\');
+end
+
 %% Elevator to Theta system
 C = [0,0,0,1];
 D = [0,0];
-linear_sys = ss(A,-B,C,D);
+linear_sys = ss(A,B,C,D);
 
-%% Laplace transform: Input - Output form
+%% Laplace transform: Input - Output form for elevator to theta (pitch) system
 tf_sys = tf(linear_sys);
+theta_sys = tf_sys(1); 
 
-%% PID controller for theta:
-Kp_theta = 20;
-Kd_theta = 8;
-Ki_theta = 5;
+%% PID Feedback controller for theta system
+Kp_theta = -15;
+Kd_theta = -8;
+Ki_theta = -5;
+tf_theta_controller = tf([Kd_theta Kp_theta Ki_theta],[1 0]);
 
-tf_theta_controller = tf([Kd_theta Kp_theta Ki_theta],[1 0])
-
-%% Feedback controller for theta
-H = feedback(tf_theta_controller*tf_sys(1),1)
+H = feedback(tf_theta_controller*theta_sys,1)
 
 figure()
 step(H)
+title('Pitch Controller Step response')
 
 figure()
 margin(H)

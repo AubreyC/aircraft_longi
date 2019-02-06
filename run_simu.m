@@ -18,20 +18,24 @@ time_f = 1000; % Final time  - seconds
 time_steps = 0:delta_s:time_f;
 nb_steps = time_f/delta_s  + 1;
 
-%% Compute trim state:
+%% Get trim parameters:
 
+% v_a_trim = 70;
+% [x_state_trim, v_a_trim, alpha_trim, d_th_trim, d_elev_trim] = find_trim_steady_level_flight(v_a_trim, P);
+
+% Pre-computed value:
 alpha_trim = 0.074030900438260;
 v_a_trim = 70.000308594752980;
 d_th_trim = 0.707469889617298;
 d_elev_trim = -(P.Cm_0 + P.Cm_alpha*alpha_trim)/P.Cm_delta;
 
-% Init state at trim:
-theta_init = alpha_trim;
-theta_trim = theta_init;
+x_state_trim = define_state_trim(alpha_trim,d_th_trim, v_a_trim);
 
-v_init_bf = rot_Y(alpha_trim)*[v_a_trim;0;0];
-x_init = [0;0; v_init_bf(1);v_init_bf(3);theta_init;0];
-x_state = x_init;
+% Define theta_trim
+theta_trim = x_state_trim(5);
+
+% Init state at trim
+x_state = x_state_trim;
 
 %% Logging varialbles:
 x_state_log = zeros(6,nb_steps);
@@ -62,10 +66,6 @@ d_th_total_log = zeros(1,nb_steps);
 % - Reference Altitude
 % - Reference Speed
 
-theta_ref = zeros(1,nb_steps);
-theta_ref(:,1:floor(nb_steps/2)) = alpha_trim;
-theta_ref(:,floor(nb_steps/2):end) = 0.1; 
-
 alt_ref = zeros(1,nb_steps);
 alt_ref(:,1:floor(nb_steps/2)) = 0;
 alt_ref(:,floor(nb_steps/2):end) = 50; 
@@ -74,6 +74,10 @@ v_ref = zeros(1,nb_steps);
 v_ref(:,1:floor(nb_steps/2)) = 70;
 v_ref(:,floor(nb_steps/2):end) = 75;
 
+theta_ref = zeros(1,nb_steps);
+theta_ref(:,1:floor(nb_steps/2)) = alpha_trim;
+theta_ref(:,floor(nb_steps/2):end) = 0.2; 
+
 %% Controllers variables initialization
 integral_theta_error = 0;
 integral_energy_tot_error = 0;
@@ -81,7 +85,7 @@ integral_energy_bal_error = 0;
 
 alt_c = alt_ref(1,1);
 V_c = v_ref(1,1);
-theta_c = theta_trim;
+theta_c = x_state(5);
 
 E_bal_e_last = nan;
 theta_error_last = nan;
@@ -159,32 +163,42 @@ for time = time_steps
 
     % Compute error integrals with maximal value to avoid intergal wind-up
     integral_energy_bal_error = integral_energy_bal_error + E_bal_e*delta_s;
-    integral_energy_bal_error = min((1/P.Ki_energy_bal), max(integral_energy_bal_error, (-1/P.Ki_energy_bal)));
+    integral_energy_bal_error = sat_value(integral_energy_bal_error, (-1/P.Ki_energy_bal), (1/P.Ki_energy_bal));
 
     integral_energy_tot_error = integral_energy_tot_error + E_tot_e*delta_s;
-    integral_energy_tot_error = min((1/P.Ki_energy_tot), max(integral_energy_tot_error, (-1/P.Ki_energy_tot)));
+    integral_energy_tot_error = sat_value(integral_energy_tot_error,-1/P.Ki_energy_tot, 1/P.Ki_energy_tot);
 
-    % PI controller on Total Energy
-    theta_c = P.Kp_energy_bal*E_bal_e + P.Kd_energy_bal*E_bal_e_dot + P.Ki_energy_bal*integral_energy_bal_error + theta_trim;
+    % PID controller on Energy Balance
+    theta_c = P.Kp_energy_bal*E_bal_e + P.Kd_energy_bal*E_bal_e_dot + P.Ki_energy_bal*integral_energy_bal_error;
+    
+    % Adding theta for trim state - Sort of feedforward corresponding to the trim state
+    theta_c = theta_c + theta_trim;
         
     theta_c_Kp_log(1, index-1) = P.Kp_energy_bal*E_bal_e;
     theta_c_Ki_log(1, index-1) = P.Ki_energy_bal*integral_energy_bal_error;
     theta_c_Kd_log(1, index-1) = P.Kd_energy_bal*E_bal_e_dot;
 
-    % PID controller on Energy Balance
+    % PI controller on Total Energy
     d_th = P.Kp_energy_tot*E_tot_e + P.Ki_energy_tot*integral_energy_tot_error;
     d_th_Kp_log(1, index-1) = P.Kp_energy_tot*E_tot_e;
     d_th_Ki_log(1, index-1) = P.Ki_energy_tot*integral_energy_tot_error;
+    
+    % Add Throttle for trim steady flight - Sort of feedforward corresponding to the trim state
+    d_th_total = d_th + d_th_trim;
 
     %% Pitch Controller
     
-    % If looking at a step response for theta, use directly:
-    % theta_c = theta_ref(1, index -1);
+    % If looking at Theta step response:
+%     theta_c = theta_ref(1, index -1);
+%     d_th_total = d_th_trim;
+     
+    % Log 
     theta_ref_log(1,index-1) = theta_c;
     
     % Pitch error
     theta_error = theta_c - x_state(5);
     integral_theta_error = integral_theta_error + theta_error*delta_s;
+    integral_theta_error = sat_value(integral_theta_error, (-1/P.Ki_pitch), (1/P.Ki_pitch));
     
     % Compute error derivative: Very crude & sensible to discontinuity ! 
     if isnan(theta_error_last)
@@ -193,24 +207,24 @@ for time = time_steps
     theta_error_dot = (theta_error - theta_error_last)/delta_s;
     theta_error_last = theta_error;
     
-    % If looking at a step response for theta, use directly:
-    %theta_error_dot = -x_state(6);
+    % If looking at Theta step response: Use directly angular rate for
+    % theta error rate to avoid discontinuity n the derivative
+%     theta_error_dot = -x_state(6);
     
     % PID controller on theta
     d_elev = P.Kp_pitch*theta_error + P.Kd_pitch*theta_error_dot + P.Ki_pitch*integral_theta_error;
     
-    %% Compute dynamics
-    
-    % Input deflection from trim state:
+    % Add trim elevator deflection - Sort of feedforward corresponding to the trim state
     d_elev_total = d_elev_trim + d_elev;
-    d_th_total = d_th_trim + d_th;
-    d_th_total = max(min(d_th_total, 1),0);
 
+    %% Compute dynamics
+
+    % Log throtle and elevetor deflection:
     d_elev_total_log(1, index-1) = d_elev_total;
     d_th_total_log(1, index-1) = d_th_total;
-
+    
     % Compute Forces and Moments in Body Frame
-    [f_x_bf,f_z_bf, m_y_bf] = compute_forces_moments(x_state, d_elev_total, d_th_total, P);
+    [f_x_bf,f_z_bf, m_y_bf] = compute_forces_moments(x_state, d_elev_total, d_th_total, P, true);
 
     % Compute dynamics according to the equations of motion
     x_state_dot = compute_state_deriv(x_state, f_x_bf, f_z_bf , m_y_bf, P);

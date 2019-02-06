@@ -1,4 +1,4 @@
-function [f_x_bf,f_z_bf, m_y_bf] = compute_forces_moments(x_state, d_elev, d_th, P)
+function [f_x_bf,f_z_bf, m_y_bf] = compute_forces_moments(x_state, d_elev, d_th, P, limit_actuator)
 % Compute longitudinal Forces and Moments applied to the aircraft
 
 %% Parse state 
@@ -16,7 +16,10 @@ V_a = norm([u;w]); % /!\ Should take the relative airspeed
 
 %% Actuators limit:
 
-d_th = max(min(d_th, 1),0); % Limit the thrust to [0:1]
+if limit_actuator
+    d_th = max(min(d_th, 1),0); % Limit the thrust to [0:1]
+end
+
 % Limit the elevator delfection here:
 
 %% Forces along X Z axis in Body Frame

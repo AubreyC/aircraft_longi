@@ -21,7 +21,7 @@ P.c = 7.5;              % m
 %% Controllers
 
 % Pitch controller:
-P.Kp_pitch = -20;
+P.Kp_pitch = -15;
 P.Kd_pitch = -8;
 P.Ki_pitch = -5;
 
