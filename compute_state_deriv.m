@@ -1,49 +1,33 @@
-function [x_state_dot] = compute_state_deriv(x_state, f_bf, m_bf, P)
-%UNTITLED2 Summary of this function goes here
-%   Detailed explanation goes here
-
-p_n = x_state(1);
-p_e = x_state(2);
-p_d = x_state(3);
-
-u = x_state(4);
-v = x_state(5);
-w = x_state(6);
-
-phi = x_state(7);
-theta = x_state(8);
-psi = x_state(9);
-
-p = x_state(10);
-q = x_state(11);
-r = x_state(12);
+function [x_state_dot] = compute_state_deriv(x_state, f_x_bf,f_z_bf, m_y_bf, P)
+% Compute the longitudinal state derivatives according to the equation of
+% motion
 
 
-f_x = f_bf(1);
-f_y = f_bf(2);
-f_z = f_bf(3);
+%% Parse state 
+p_n = x_state(1);   % North Position - Inertial NED frame
+p_d = x_state(2);   % Down Position - Inertial NED frame
+u = x_state(3);     % Velocity with respect to Inertial NED frame expressed in Body Frame along X
+w = x_state(4);     % Velocity with respect to Inertial NED frame expressed in Body Frame along Z
+theta = x_state(5); % Euler angle of the Body Frame With respect to the Inertial NED frame 
+q = x_state(6);     % Angular rate of the body frame with respect to the inertial frame expressed in Body Frame
 
-m_x = m_bf(1);
-m_y = m_bf(2);
-m_z = m_bf(3);
+%% Derivation only taking longitudinal dynamics
+% Ref: Small Unnmanned Aircraft - Randal W. Beard
 
-% Derivation only taking longitudinal dynamics:
-p_n_dot = u*cos(theta) + w*sin(theta);
-p_e_dot = 0;
-p_d_dot = -u*sin(theta) + w*cos(theta);
+% Use rotation matrix to avoid error with sin/cos rotation:
+rot_NED_BF = transpose(rot_BF_NED(0, theta, 0));
+p_dot_NED = rot_NED_BF*[u;0;w];
+p_n_dot = p_dot_NED(1);
+p_d_dot = p_dot_NED(3);
 
-u_dot = -q*w + (1/P.mass)*f_x;
-v_dot = 0;
-w_dot = q*u + (1/P.mass)*f_z;
+u_dot = -q*w + (1/P.mass)*f_x_bf;
+w_dot = q*u + (1/P.mass)*f_z_bf;
 
-p_dot = 0;
-q_dot = (1/P.I_yy)*m_y;
-r_dot = 0;
+q_dot = (1/P.I_yy)*m_y_bf;
 
-phi_dot = 0;
 theta_dot = q;
-psi_dot = 0;
 
-x_state_dot = [p_n_dot; p_e_dot; p_d_dot; u_dot; v_dot; w_dot; phi_dot; theta_dot; psi_dot; p_dot; q_dot; r_dot];
+%% State derivative
+x_state_dot = [p_n_dot; p_d_dot; u_dot; w_dot; theta_dot; q_dot];
 
 end
