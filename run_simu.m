@@ -52,9 +52,11 @@ v_ref(:,1:floor(nb_steps/2)) = 70;
 v_ref(:,floor(nb_steps/2):end) = 75;
 
 % If looking at pitch step response:
-% theta_ref = zeros(1,nb_steps);
-% theta_ref(:,1:floor(nb_steps/2)) = alpha_trim;
-% theta_ref(:,floor(nb_steps/2):end) = 0.2; 
+theta_step_mode = false; % Set to true if looking at step response
+% Set the reference for the pitch
+theta_ref = zeros(1,nb_steps);
+theta_ref(:,1:floor(nb_steps/2)) = alpha_trim;
+theta_ref(:,floor(nb_steps/2):end) = 0.2; 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -195,9 +197,11 @@ for time = time_steps
     %% Pitch Controller
     
     % If looking at pitch step response:
-%     theta_c = theta_ref(1, index -1);
-%     d_th_total = d_th_trim;
-     
+    if theta_step_mode
+        theta_c = theta_ref(1, index -1);
+        d_th_total = d_th_trim;
+    end
+    
     % Log 
     theta_ref_log(1,index-1) = theta_c;
     
@@ -215,8 +219,10 @@ for time = time_steps
     theta_error_last = theta_error;
     
     % If looking at pitch step response:
-    % Use directly angular rate for theta error rate to avoid discontinuity n the derivative
-%     theta_error_dot = -x_state(6);
+    if theta_step_mode
+        % Use directly angular rate for theta error rate to avoid discontinuity n the derivative
+        theta_error_dot = -x_state(6);
+    end
     
     % PID controller on theta
     d_elev = P.Kp_pitch*theta_error + P.Kd_pitch*theta_error_dot + P.Ki_pitch*integral_theta_error;
