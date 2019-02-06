@@ -2,7 +2,7 @@
 
 **Goal:** Control the longitudinal trajectory of the aircraft with throttle and elevator inputs
 
-- Longitudinal aircraft equation of motion
+- Aircraft longitudinal equation of motion
 - PID Pitch controller
 - Total Energy System Controller for altitude and speed
 
