@@ -17,7 +17,8 @@ V_a = norm([u;w]); % /!\ Should take the relative airspeed
 %% Actuators limit:
 
 if limit_actuator
-    d_th = max(min(d_th, 1),0); % Limit the thrust to [0:1]
+    d_th = sat_value(d_th, 0,1); % Limit the thrust to [0:1]
+%     d_elev = sat_value(d_elev, -1.0472, 1.0472);
 end
 
 % Limit the elevator delfection here:

@@ -14,12 +14,12 @@ params;
 %% Trim parameters
 
 % v_a_trim = 70;
-% [x_state_trim, v_a_trim, alpha_trim, d_th_trim, d_elev_trim] = find_trim_steady_level_flight(v_a_trim, P);
+% [x_state_trim, v_a_trim, alpha_trim, d_th_trim, d_elev_trim] = find_trim_steady_level_flight(v_a_trim, P)
 
 % Pre-computed value:
-alpha_trim = 0.074030900438260;
-v_a_trim = 70.000308594752980;
-d_th_trim = 0.707469889617298;
+alpha_trim = 0.074032960458562;
+v_a_trim = 70;
+d_th_trim = 0.707469924374067;
 d_elev_trim = -(P.Cm_0 + P.Cm_alpha*alpha_trim)/P.Cm_delta;
 
 x_state_trim = define_state_trim(alpha_trim,d_th_trim, v_a_trim);

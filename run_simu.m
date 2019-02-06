@@ -7,14 +7,13 @@
 % - Total Energy Control System for Altitude and Speed control
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%% Clean and import parameters
 clear all;
-
-%% Import Parameters
 params;
 
 %% Similation parameters
 delta_s = 0.01; % Simulation time step - seconds
-time_f = 1000; % Final time  - seconds
+time_f = 100; % Final time  - seconds
 time_steps = 0:delta_s:time_f;
 nb_steps = time_f/delta_s  + 1;
 
@@ -36,6 +35,28 @@ theta_trim = x_state_trim(5);
 
 % Init state at trim
 x_state = x_state_trim;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% DEFINE REFERENCE TRAJECTORY HERE
+% - Reference Altitude
+% - Reference Speed
+
+% Altitude ref
+alt_ref = zeros(1,nb_steps);
+alt_ref(:,1:floor(nb_steps/2)) = 0;
+alt_ref(:,floor(nb_steps/2):end) = 20; 
+
+% Speed ref
+v_ref = zeros(1,nb_steps);
+v_ref(:,1:floor(nb_steps/2)) = 70;
+v_ref(:,floor(nb_steps/2):end) = 75;
+
+% If looking at pitch step response:
+% theta_ref = zeros(1,nb_steps);
+% theta_ref(:,1:floor(nb_steps/2)) = alpha_trim;
+% theta_ref(:,floor(nb_steps/2):end) = 0.2; 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Logging varialbles:
 x_state_log = zeros(6,nb_steps);
@@ -61,22 +82,6 @@ d_th_Kp_log = zeros(1,nb_steps);
 
 d_elev_total_log = zeros(1,nb_steps);
 d_th_total_log = zeros(1,nb_steps);
-
-%% Define reference trajectory here:
-% - Reference Altitude
-% - Reference Speed
-
-alt_ref = zeros(1,nb_steps);
-alt_ref(:,1:floor(nb_steps/2)) = 0;
-alt_ref(:,floor(nb_steps/2):end) = 50; 
-
-v_ref = zeros(1,nb_steps);
-v_ref(:,1:floor(nb_steps/2)) = 70;
-v_ref(:,floor(nb_steps/2):end) = 75;
-
-theta_ref = zeros(1,nb_steps);
-theta_ref(:,1:floor(nb_steps/2)) = alpha_trim;
-theta_ref(:,floor(nb_steps/2):end) = 0.2; 
 
 %% Controllers variables initialization
 integral_theta_error = 0;
@@ -185,10 +190,11 @@ for time = time_steps
     
     % Add Throttle for trim steady flight - Sort of feedforward corresponding to the trim state
     d_th_total = d_th + d_th_trim;
+    d_th_total = sat_value(d_th_total, 0,1); 
 
     %% Pitch Controller
     
-    % If looking at Theta step response:
+    % If looking at pitch step response:
 %     theta_c = theta_ref(1, index -1);
 %     d_th_total = d_th_trim;
      
@@ -197,6 +203,7 @@ for time = time_steps
     
     % Pitch error
     theta_error = theta_c - x_state(5);
+    
     integral_theta_error = integral_theta_error + theta_error*delta_s;
     integral_theta_error = sat_value(integral_theta_error, (-1/P.Ki_pitch), (1/P.Ki_pitch));
     
@@ -207,8 +214,8 @@ for time = time_steps
     theta_error_dot = (theta_error - theta_error_last)/delta_s;
     theta_error_last = theta_error;
     
-    % If looking at Theta step response: Use directly angular rate for
-    % theta error rate to avoid discontinuity n the derivative
+    % If looking at pitch step response:
+    % Use directly angular rate for theta error rate to avoid discontinuity n the derivative
 %     theta_error_dot = -x_state(6);
     
     % PID controller on theta
@@ -216,7 +223,7 @@ for time = time_steps
     
     % Add trim elevator deflection - Sort of feedforward corresponding to the trim state
     d_elev_total = d_elev_trim + d_elev;
-
+    
     %% Compute dynamics
 
     % Log throtle and elevetor deflection:
