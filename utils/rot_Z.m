@@ -1,8 +1,6 @@
 function [ rot ] = rot_Z( psi )
 % Create rotation matrix around Z vector in the right-hand positive
-% direction
-%Phi in Radian
-% Yaw
+% direction. psi in radians
 
 rot = [ cos(psi) sin(psi)   0; 
        -sin(psi) cos(psi)   0;
