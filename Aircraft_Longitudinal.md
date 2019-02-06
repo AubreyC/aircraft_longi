@@ -1,5 +1,13 @@
 # Aircraft Longitudinal Motion
 
+**Goal:** Control the longitudinal trajectory of the aircraft with throttle and elevator inputs
+
+- Longitudinal aircraft equation of motion
+- PID Pitch controller
+- Total Energy System Controller for altitude and speed
+
+Ref: *Small Unmanned Aircraft, Theory and Practice - Randal W. Beard and Timothy W. McLain*
+
 ## Parameters
 
 Parameters are defined in the `params.m` matlab file.
@@ -93,11 +101,7 @@ Ref: *Total Energy Control for LongitudinalAutopilot - Randal W. Beard* (http://
 **Altitude and Speed changes:**
 ![alt text](images/TECS_alt_speed.png)
 
-**Altitude and Speed changes:**
-
 ## Limitations
-
-Some limitations:
 
 - There is no limit on the elevator actuator
 - Need to add proper saturations to the different controller based on actuators limitations
