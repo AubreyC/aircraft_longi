@@ -72,12 +72,18 @@ Eigenvalues:
 
 ## Control
 
+Run `run_simu.m` matlab script, and change the section to define the desired trajectory (altitude and speed)
+
 ### Picth controller
 
 **Picth step response on real system:**
 ![alt text](images/PID_pitch_real.png)
 
-**Limitation:** There is no saturation on the elevator, this should be added and taken into account in the controller
+**Limitation:**
+
+- Pitch response should be improved (too long)
+- There is no saturation on the elevator, this should be added and taken into account in the controller
+
 
 ### Altitude and Speed controller: Total Energy Control System
 

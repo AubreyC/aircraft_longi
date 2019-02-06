@@ -1116,10 +1116,15 @@ body .markdown-body
 <p><strong>Step response of Pitch PID controller (linearized system):</strong>
 <img alt="alt text" src="/Users/aubrey/Documents/code/flying_whales/images/PID_pitch_linear_step.png" /></p>
 <h2 id="control">Control<a class="headerlink" href="#control" title="Permanent link"></a></h2>
+<p>Run <code>run_simu.m</code> matlab script, and change the section to define the desired trajectory (altitude and speed)</p>
 <h3 id="picth-controller">Picth controller<a class="headerlink" href="#picth-controller" title="Permanent link"></a></h3>
 <p><strong>Picth step response on real system:</strong>
 <img alt="alt text" src="/Users/aubrey/Documents/code/flying_whales/images/PID_pitch_real.png" /></p>
-<p><strong>Limitation:</strong> There is no saturation on the elevator, this should be added and taken into account in the controller</p>
+<p><strong>Limitation:</strong></p>
+<ul>
+<li>Pitch response should be improved (too long)</li>
+<li>There is no saturation on the elevator, this should be added and taken into account in the controller</li>
+</ul>
 <h3 id="altitude-and-speed-controller-total-energy-control-system">Altitude and Speed controller: Total Energy Control System<a class="headerlink" href="#altitude-and-speed-controller-total-energy-control-system" title="Permanent link"></a></h3>
 <p>Ref: <em>Total Energy Control for LongitudinalAutopilot - Randal W. Beard</em> (<a href="http://uavbook.byu.edu/lib/exe/fetch.php?media=shared:tecs_autopilot.pdf">http://uavbook.byu.edu/lib/exe/fetch.php?media=shared:tecs_autopilot.pdf</a>)</p>
 <p><strong>Mechanism:</strong></p>
