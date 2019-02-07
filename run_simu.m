@@ -153,7 +153,8 @@ for time = time_steps
     % Error on Energy Balance with weigh coefficient
     E_bal_e =  2*(P.energy_bal_coeff*E_pot_e - (1-P.energy_bal_coeff)*E_kin_e);
     
-    % Saturation on energy error
+    % Saturation on energy error: Should actually be scaled also according
+    % to max/min pitch
     E_bal_e =  sat_value(E_bal_e, -1/P.Kp_energy_bal, 1/P.Kp_energy_bal);
     E_tot_e =  sat_value(E_tot_e, -1/P.Kp_energy_tot, 1/P.Kp_energy_tot);
 
@@ -168,11 +169,13 @@ for time = time_steps
     E_bal_e_dot = (E_bal_e - E_bal_e_last)/delta_s;
     E_bal_e_last = E_bal_e;
 
-    % Compute error integrals with maximal value to avoid intergal wind-up
+    % Compute error integrals
     integral_energy_bal_error = integral_energy_bal_error + E_bal_e*delta_s;
-    integral_energy_bal_error = sat_value(integral_energy_bal_error, (-1/P.Ki_energy_bal), (1/P.Ki_energy_bal));
-
     integral_energy_tot_error = integral_energy_tot_error + E_tot_e*delta_s;
+
+    % Saturation to avoid intergal wind-up
+    % Should actually be scaled also according to max/min pitch
+    integral_energy_bal_error = sat_value(integral_energy_bal_error, (-1/P.Ki_energy_bal), (1/P.Ki_energy_bal));
     integral_energy_tot_error = sat_value(integral_energy_tot_error,-1/P.Ki_energy_tot, 1/P.Ki_energy_tot);
 
     % PID controller on Energy Balance
@@ -208,7 +211,10 @@ for time = time_steps
     % Pitch error
     theta_error = theta_c - x_state(5);
     
+    % Compute intergal
     integral_theta_error = integral_theta_error + theta_error*delta_s;
+
+    % Saturation: Should actually take into account max value for elevator deflection
     integral_theta_error = sat_value(integral_theta_error, (-1/P.Ki_pitch), (1/P.Ki_pitch));
     
     % Compute error derivative: Very crude & sensible to discontinuity ! 
